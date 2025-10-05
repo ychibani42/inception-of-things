@@ -1,0 +1,32 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+  config.vm.provision "shell", inline: <<-SHELL
+  # Générer les clés SSH si elles n'existent pas
+  sudo -u vagrant ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa || true
+  # Autoriser la connexion SSH avec le mot de passe temporairement
+  sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+  sudo systemctl restart sshd
+  SHELL
+
+  # Configuration du Server (Controller)
+  config.vm.define "loginS" do |server|
+    server.vm.hostname = "loginS"
+    server.vm.network "private_network", ip: "192.168.56.110"
+    server.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+    server.vm.provision "shell", path: "scripts/server.sh"
+  end
+  
+  # Configuration du ServerWorker (Agent)
+  config.vm.define "loginSW" do |worker|
+    worker.vm.hostname = "loginSW"
+    worker.vm.network "private_network", ip: "192.168.56.111"
+    worker.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+    worker.vm.provision "shell", path: "scripts/worker.sh"
+  end
+end
